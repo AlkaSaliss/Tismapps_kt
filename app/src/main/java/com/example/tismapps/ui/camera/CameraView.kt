@@ -9,19 +9,16 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Lens
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +27,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberImagePainter
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,7 +42,7 @@ fun CameraView(
     outputDirectory: File,
     executor: Executor,
     onImageCaptured: (Uri) -> Unit,
-    onError: (ImageCaptureException) -> Unit
+    onError: (ImageCaptureException) -> Unit,
 ){
 
     val lensFacing = CameraSelector.LENS_FACING_BACK
@@ -78,7 +77,7 @@ fun CameraView(
         IconButton(
             modifier = Modifier.padding(bottom = 20.dp),
             onClick = {
-                Log.i("ALKA", "ON CLICK")
+                Log.i("TISMAPPS", "ON CLICK")
                 takePhoto(
                     imageCapture = imageCapture,
                     outputDirectory = outputDirectory,
@@ -119,7 +118,7 @@ private fun takePhoto(
 
     imageCapture.takePicture(outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
         override fun onError(exception: ImageCaptureException) {
-            Log.e("ALKA", "Take photo error", exception)
+            Log.e("TISMAPPS", "Take photo error", exception)
             onError(exception)
         }
 
@@ -129,6 +128,28 @@ private fun takePhoto(
         }
     })
 }
+
+
+/*@Composable
+fun ResultScreen(
+    cameraViewModel: CameraViewModel = viewModel()
+) {
+    val cameraUiState by cameraViewModel.cameraUiState.collectAsState()
+    Log.d("SOMETHING_LOGS_V3", cameraUiState.className)
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = rememberImagePainter(cameraUiState.photoUri),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(0.75f)
+        )
+        Text(text = cameraUiState.className)
+    }
+}
+*/
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider = suspendCoroutine { continuation ->
     ProcessCameraProvider.getInstance(this).also {cameraProvider ->
