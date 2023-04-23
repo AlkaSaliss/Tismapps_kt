@@ -1,14 +1,9 @@
 package com.example.tismapps.ui.camera
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.activity.result.ActivityResultLauncher
-import androidx.core.app.ActivityCompat
 import androidx.core.app.ComponentActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import com.example.tismapps.R
 import com.example.tismapps.assetFilePath
@@ -41,24 +36,23 @@ class CameraViewModel: ViewModel() {
     lateinit var imageBitmap: Bitmap
         private set
 
-    fun updateCameraPermission(value: Boolean) {
-        _cameraUiState.update { currentState ->
-            currentState.copy(shouldShowCamera = value)
-        }
-    }
-
-    private fun updateShouldShowPhoto(value: Boolean) {
-        _cameraUiState.update { currentState ->
-            currentState.copy(shouldShowPhoto = value)
-        }
-    }
-
     private fun updatePredictedClass(value: String) {
         _cameraUiState.update { currentState ->
             currentState.copy(className = value)
         }
     }
 
+    /*
+    private fun updateShouldShowPhoto(value: Boolean) {
+        _cameraUiState.update { currentState ->
+            currentState.copy(shouldShowPhoto = value)
+        }
+    }
+    fun updateCameraPermission(value: Boolean) {
+        _cameraUiState.update { currentState ->
+            currentState.copy(shouldShowCamera = value)
+        }
+    }
     private fun requestCameraPermission(
         activity: ComponentActivity,
         requestPermissionLauncher: ActivityResultLauncher<String>
@@ -76,17 +70,16 @@ class CameraViewModel: ViewModel() {
 
             else -> requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
-    }
+    }*/
 
     fun handleImageCapture(uri: Uri) {
-        updateCameraPermission(false)
+        //updateCameraPermission(false)
         photoUri = uri
         classify()
-        updateShouldShowPhoto(true)
     }
 
-    fun loadModel(context: ComponentActivity, modelFile: String) {
-        module = LiteModuleLoader.load(assetFilePath(context, modelFile))
+    private fun loadModel(context: ComponentActivity) {
+        module = LiteModuleLoader.load(assetFilePath(context, "model.ptl"))
     }
 
     private fun classify() {
@@ -124,11 +117,10 @@ class CameraViewModel: ViewModel() {
 
     fun initializeCameraStuff(
         context: ComponentActivity,
-        requestPermissionLauncher: ActivityResultLauncher<String>,
     ) {
-        requestCameraPermission(context, requestPermissionLauncher)
+        //requestCameraPermission(context, requestPermissionLauncher)
         setOutputDirectory(context)
-        loadModel(context, "model.ptl")
+        loadModel(context)
     }
 
     fun destroy() {

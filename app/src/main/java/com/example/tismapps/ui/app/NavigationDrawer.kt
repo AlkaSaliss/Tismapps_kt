@@ -1,6 +1,7 @@
 package com.example.tismapps.ui.app
 
-import androidx.activity.result.ActivityResultLauncher
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -95,7 +97,7 @@ fun AppBar(
 @Composable
 fun App(
     cameraViewModel: CameraViewModel,
-    requestPermissionLauncher: ActivityResultLauncher<String>,
+    onCaptureButtonClicked: (Uri) -> Unit
 ) {
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState()
@@ -150,10 +152,13 @@ fun App(
             composable(route = AppScreensRoutes.Home.name) {
                 CameraScreen(
                     cameraViewModel,
-                    requestPermissionLauncher,
-                    navController,
-                    scaffoldState,
-                    scope
+                    onCaptureButtonClicked = {
+                        onCaptureButtonClicked(it)
+                        cameraViewModel.viewModelScope.launch {
+                            Log.d("ALKA", "GOING  RESULT SCREEN")
+                            navController.navigate(AppScreensRoutes.Result.name)
+                        }
+                    }
                 )
             }
             composable(route = AppScreensRoutes.Result.name) {
