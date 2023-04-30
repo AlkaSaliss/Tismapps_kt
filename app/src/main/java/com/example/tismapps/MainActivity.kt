@@ -13,13 +13,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tismapps.ui.camera.CameraViewModel
 import com.example.tismapps.ui.app.App
-import com.example.tismapps.ui.app.PermissionDeniedDialog
 import com.example.tismapps.ui.theme.TismappsTheme
 
 class MainActivity : ComponentActivity() {
-    lateinit var cameraViewModel : CameraViewModel
-    var shouldShowCamera = mutableStateOf(false)
-    var shouldShowResult = mutableStateOf(false)
+    private lateinit var cameraViewModel : CameraViewModel
+    private var shouldShowCamera = mutableStateOf(false)
+    private var shouldShowResult = mutableStateOf(false)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -28,7 +27,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        requestCameraPermission()
+       // requestCameraPermission()
         super.onCreate(savedInstanceState)
         setContent {
             cameraViewModel = viewModel()
@@ -36,14 +35,14 @@ class MainActivity : ComponentActivity() {
                 App(
                     cameraViewModel,
                     onCaptureButtonClicked = {
-                        cameraViewModel.handleImageCapture(it)
+                        cameraViewModel.handleImageCapture(it, this)
                         shouldShowCamera.value = false
                         shouldShowResult.value = true
                     }
                 )
             }
         }
-        //requestCameraPermission()
+        requestCameraPermission()
     }
 
     private fun requestCameraPermission() {

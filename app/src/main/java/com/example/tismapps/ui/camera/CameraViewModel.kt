@@ -3,15 +3,16 @@ package com.example.tismapps.ui.camera
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ComponentActivity
 import androidx.lifecycle.ViewModel
+import com.example.tismapps.DetectionResult
+import com.example.tismapps.PrePostProcessor
 import com.example.tismapps.R
 import com.example.tismapps.assetFilePath
-import com.example.tismapps.ui.data.IMAGENET_CLASSES
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import org.pytorch.IValue
 import org.pytorch.LiteModuleLoader
 import org.pytorch.MemoryFormat
@@ -20,6 +21,7 @@ import org.pytorch.torchvision.TensorImageUtils
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 class CameraViewModel: ViewModel() {
     private val _cameraUiState = MutableStateFlow(CameraUiState())
@@ -35,72 +37,63 @@ class CameraViewModel: ViewModel() {
         private set
     lateinit var imageBitmap: Bitmap
         private set
+    lateinit var rects: ArrayList<DetectionResult>
 
-    private fun updatePredictedClass(value: String) {
-        _cameraUiState.update { currentState ->
-            currentState.copy(className = value)
-        }
-    }
+    val imgHeight = 1024.dp
+    val imgWidth = 512.dp
+    private val imgName = "image2.jpg"
 
-    /*
-    private fun updateShouldShowPhoto(value: Boolean) {
-        _cameraUiState.update { currentState ->
-            currentState.copy(shouldShowPhoto = value)
-        }
-    }
-    fun updateCameraPermission(value: Boolean) {
-        _cameraUiState.update { currentState ->
-            currentState.copy(shouldShowCamera = value)
-        }
-    }
-    private fun requestCameraPermission(
-        activity: ComponentActivity,
-        requestPermissionLauncher: ActivityResultLauncher<String>
-    ) {
-        when {
-            ContextCompat.checkSelfPermission(
-                activity, Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                updateCameraPermission(true)
-            }
-
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                activity, Manifest.permission.CAMERA
-            ) -> {}
-
-            else -> requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }*/
-
-    fun handleImageCapture(uri: Uri) {
+    fun handleImageCapture(uri: Uri, context: ComponentActivity) {
         //updateCameraPermission(false)
-        photoUri = uri
-        classify()
+        //photoUri = uri
+        photoUri = Uri.fromFile(File("//android_asset/$imgName"))
+
+        classify(context)
     }
 
     private fun loadModel(context: ComponentActivity) {
-        module = LiteModuleLoader.load(assetFilePath(context, "model.ptl"))
+        module = LiteModuleLoader.load(assetFilePath(context, "best.torchscript.ptl"))
     }
 
-    private fun classify() {
-        imageBitmap = BitmapFactory.decodeFile(photoUri.path)
-        val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
+    private fun classify(
+        context: ComponentActivity,
+
+    ) {
+
+        //imageBitmap = BitmapFactory.decodeFile(photoUri.path)
+        imageBitmap = BitmapFactory.decodeStream(context.assets.open(imgName))
+        val dpToPx = context.resources.displayMetrics.density
+
+        val resizedImageBitmap = Bitmap.createScaledBitmap(
             imageBitmap,
-            TensorImageUtils.TORCHVISION_NORM_MEAN_RGB,
-            TensorImageUtils.TORCHVISION_NORM_STD_RGB,
+            PrePostProcessor.mInputWidth,
+            PrePostProcessor.mInputHeight,
+            false
+        )
+        val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
+            resizedImageBitmap,
+            PrePostProcessor.NO_MEAN_RGB,
+            PrePostProcessor.NO_STD_RGB,
             MemoryFormat.CHANNELS_LAST
         )
 
-            val scores = module.forward(IValue.from(imgTensor)).toTensor().dataAsFloatArray
-            var maxScore = -Float.MAX_VALUE
-            var maxScoreIdx = -1
-            for (i in scores.indices) {
-                if (scores[i] > maxScore) {
-                    maxScore = scores[i]
-                    maxScoreIdx = i
-                }
-            }
-            updatePredictedClass(IMAGENET_CLASSES[maxScoreIdx])
+        val outputs = module.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
+        val imgScaleX = imageBitmap.width.toFloat() / PrePostProcessor.mInputWidth
+        val imgScaleY = imageBitmap.height.toFloat() / PrePostProcessor.mInputHeight
+        val ivScaleX: Float = (imgWidth.value * dpToPx) / imageBitmap.width
+        val ivScaleY: Float = (imgHeight.value * dpToPx) / imageBitmap.height
+
+        val startX = 0f
+        val startY = 0f
+        rects = PrePostProcessor.outputsToNMSPredictions(
+            outputs,
+            imgScaleX,
+            imgScaleY,
+            ivScaleX,
+            ivScaleY,
+            startX,
+            startY
+        )
     }
 
     private fun setOutputDirectory(context: ComponentActivity) {
@@ -118,7 +111,6 @@ class CameraViewModel: ViewModel() {
     fun initializeCameraStuff(
         context: ComponentActivity,
     ) {
-        //requestCameraPermission(context, requestPermissionLauncher)
         setOutputDirectory(context)
         loadModel(context)
     }

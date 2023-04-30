@@ -1,14 +1,10 @@
 package com.example.tismapps.ui.app
 
 import android.Manifest
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
@@ -17,9 +13,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
-import coil.compose.rememberImagePainter
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.scale
 import com.example.tismapps.ui.camera.CameraViewModel
+import kotlin.math.roundToInt
 
 
 enum class AppScreensRoutes{
@@ -41,6 +49,7 @@ fun MenuScreen(screenName: String) {
     }
 }
 
+@OptIn(ExperimentalTextApi::class)
 @Composable
 fun ResultScreen(
     cameraViewModel: CameraViewModel
@@ -51,52 +60,43 @@ fun ResultScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Log.d(
-            "ALKA",
-            "RESULT SCREEN ${cameraUiState.className}, ${cameraViewModel.photoUri}, ${cameraViewModel.outputDirectory}"
-        )
-        Image(
-            painter = rememberImagePainter(cameraViewModel.photoUri),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(0.75f)
-        )
-        Text(text = cameraUiState.className)
+
+        Box(
+            modifier = Modifier
+                .size(cameraViewModel.imgWidth, cameraViewModel.imgHeight)
+        ) {
+
+            val w = LocalDensity.current.run { cameraViewModel.imgWidth.toPx() }
+            val h = LocalDensity.current.run { cameraViewModel.imgHeight.toPx() }
+
+            val img = cameraViewModel.imageBitmap
+            val textMeasurer = rememberTextMeasurer()
+
+            Canvas(modifier = Modifier.size(cameraViewModel.imgWidth, cameraViewModel.imgHeight), onDraw = {
+                drawImage(
+                    img.scale(w.toInt(), h.toInt())
+                        .asImageBitmap()
+                )
+                for (bbox in cameraViewModel.rects) {
+                    val resultOffset = Offset(bbox.rect.left.toFloat(), bbox.rect.top.toFloat())
+                    drawRect(
+                        color = Color.Magenta,
+                        topLeft = resultOffset,
+                        size = Size(bbox.rect.width().toFloat(), bbox.rect.height().toFloat()),
+                        alpha = 0.3f
+                    )
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = "Score: ${(100*bbox.score).roundToInt()}%",
+                        topLeft = resultOffset,
+                        style = TextStyle(fontSize = 32.sp, color = Color.White)
+
+                    )
+                }
+
+            })
+        }
+        Text(text = cameraUiState.className, modifier = Modifier.padding(top = 16.dp))
     }
 
-}
-
-
-@Composable
-fun PermissionDeniedDialog(
-    activity: ComponentActivity,
-    requestPermissionLauncher: ActivityResultLauncher<String>,
-    modifier: Modifier = Modifier
-) {
-
-    AlertDialog(
-        onDismissRequest = {
-            activity.finish()
-        },
-        title = { Text("Camera Permission") },
-        text = { Text("Camera Permission not granted. Exiting") },
-        modifier = modifier,
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    activity.finish()
-                }
-            ) {
-                Text(text = "Exit")
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-                }
-            ) {
-                Text(text = "Request Permission")
-            }
-        }
-    )
 }
