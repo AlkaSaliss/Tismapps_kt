@@ -3,12 +3,15 @@ package com.example.tismapps
 import android.content.Context
 import android.graphics.Rect
 import androidx.compose.material.ScaffoldState
+import androidx.core.app.ComponentActivity
 import androidx.navigation.NavHostController
 import com.example.tismapps.ui.app.AppScreensRoutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStreamReader
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -44,9 +47,9 @@ fun assetFilePath(context: Context, assetName: String): String {
     }
 }
 
-data class DetectionResult(var classIndex: Int, var score: Float, var rect: Rect) {
+data class DetectionResult(var className: String, var score: Float, var rect: Rect) {
     override fun toString(): String {
-        return "Prediction(Class index: $classIndex, Confidence score: $score, Coords: $rect)\nWidth:${rect.width()}, Height:${rect.height()}"
+        return "Prediction(Class index: $className, Confidence score: $score, Coords: $rect)\nWidth:${rect.width()}, Height:${rect.height()}"
     }
 }
 
@@ -56,13 +59,13 @@ object PrePostProcessor {
     var NO_STD_RGB = floatArrayOf(1.0f, 1.0f, 1.0f)
 
     // model input image size
-    var mInputWidth = 256
-    var mInputHeight = 256
+    var mInputWidth = 640
+    var mInputHeight = 640
 
     // model output is of size 4032*(num_of_class+5)
     private val mOutputRow =
-        4032 // as decided by the YOLOv5 model for input image of size 256*256
-    private val mOutputColumn = 6 // left, top, right, bottom, score and 1 class probability
+        25200 // as decided by the YOLOv5 model for input image of size 640*640
+    private val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
     private val mThreshold = 0.25f
     private val mNmsLimit = 15
     // The two methods nonMaxSuppression and IOU below are ported from https://github.com/hollance/YOLO-CoreML-MPSNNGraph/blob/master/Common/Helpers.swift
@@ -142,7 +145,8 @@ object PrePostProcessor {
         ivScaleX: Float,
         ivScaleY: Float,
         startX: Float,
-        startY: Float
+        startY: Float,
+        classes: MutableList<String>
     ): ArrayList<DetectionResult> {
         val results = ArrayList<DetectionResult>()
         for (i in 0 until mOutputRow) {
@@ -156,11 +160,11 @@ object PrePostProcessor {
                 val right = imgScaleX * (x + w / 2)
                 val bottom = imgScaleY * (y + h / 2)
                 var max = outputs[i * mOutputColumn + 5]
-                var cls = 0
+                var classIdx = 0
                 for (j in 0 until mOutputColumn - 5) {
                     if (outputs[i * mOutputColumn + 5 + j] > max) {
                         max = outputs[i * mOutputColumn + 5 + j]
-                        cls = j
+                        classIdx = j
                     }
                 }
                 val rect = Rect(
@@ -170,7 +174,7 @@ object PrePostProcessor {
                     (startY + ivScaleY * bottom).toInt()
                 )
                 val result = DetectionResult(
-                    cls,
+                    classes[classIdx],
                     outputs[i * mOutputColumn + 4], rect
                 )
                 results.add(result)
@@ -178,4 +182,15 @@ object PrePostProcessor {
         }
         return nonMaxSuppression(results, mNmsLimit, mThreshold)
     }
+}
+
+
+fun loadClasses(context: ComponentActivity): MutableList<String> {
+    val br = BufferedReader(InputStreamReader(context.assets.open("classes.txt")))
+    val classes: MutableList<String> = mutableListOf()
+    while (true) {
+        val line = br.readLine() ?: break
+        classes.add(line)
+    }
+    return classes
 }

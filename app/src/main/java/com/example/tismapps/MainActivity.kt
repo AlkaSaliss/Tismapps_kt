@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,11 +33,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             cameraViewModel = viewModel()
+            val configuration = LocalConfiguration.current
+            val screenHeight = configuration.screenHeightDp.dp
+            val screenWidth = configuration.screenWidthDp.dp
+            cameraViewModel.imgWidth = screenWidth.times(0.90f)
+            cameraViewModel.imgHeight = screenHeight.times(0.85f)
             TismappsTheme {
                 App(
                     cameraViewModel,
-                    onCaptureButtonClicked = {
-                        cameraViewModel.handleImageCapture(it, this)
+                    onCaptureButtonClicked = { uri, rotation ->
+                        cameraViewModel.handleImageCapture(uri, rotation, this)
                         shouldShowCamera.value = false
                         shouldShowResult.value = true
                     }

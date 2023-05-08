@@ -1,15 +1,16 @@
 package com.example.tismapps.ui.camera
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import android.util.Log
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ComponentActivity
 import androidx.lifecycle.ViewModel
-import com.example.tismapps.DetectionResult
-import com.example.tismapps.PrePostProcessor
-import com.example.tismapps.R
-import com.example.tismapps.assetFilePath
+import com.example.tismapps.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,21 +39,39 @@ class CameraViewModel: ViewModel() {
     lateinit var imageBitmap: Bitmap
         private set
     lateinit var rects: ArrayList<DetectionResult>
+    lateinit var classes: MutableList<String>
+        private set
+    var rotation = 0
+        private set
 
-    val imgHeight = 1024.dp
-    val imgWidth = 512.dp
-    private val imgName = "image2.jpg"
+    var imgHeight = 1.dp
+    var imgWidth = 1.dp
 
-    fun handleImageCapture(uri: Uri, context: ComponentActivity) {
+    private val imgName = "test1.png"
+    private val modelName = "yolov5s.torchscript.ptl"
+
+    @SuppressLint("RestrictedApi", "Recycle")
+    fun handleImageCapture(uri: Uri, rotation: Int, context: ComponentActivity) {
         //updateCameraPermission(false)
-        //photoUri = uri
-        photoUri = Uri.fromFile(File("//android_asset/$imgName"))
+        photoUri = uri
+        this.rotation = rotation
 
+        //photoUri = Uri.fromFile(File("//android_asset/$imgName"))
+        Log.d("YOLO", "$photoUri")
         classify(context)
     }
 
     private fun loadModel(context: ComponentActivity) {
-        module = LiteModuleLoader.load(assetFilePath(context, "best.torchscript.ptl"))
+        module = LiteModuleLoader.load(assetFilePath(context, modelName))
+    }
+
+    private fun rotateImage(srcImg: Bitmap, rotation: Int): Bitmap {
+        if (rotation != 0) {
+            val matrix = Matrix()
+            matrix.postRotate(rotation.toFloat())
+            return Bitmap.createBitmap(srcImg, 0, 0, srcImg.width, srcImg.height, matrix, srcImg.hasAlpha() )
+        }
+        return srcImg
     }
 
     private fun classify(
@@ -60,8 +79,9 @@ class CameraViewModel: ViewModel() {
 
     ) {
 
-        //imageBitmap = BitmapFactory.decodeFile(photoUri.path)
-        imageBitmap = BitmapFactory.decodeStream(context.assets.open(imgName))
+        // imageBitmap =  BitmapFactory.decodeFile(photoUri.path)
+        // imageBitmap = BitmapFactory.decodeStream(context.assets.open(imgName))
+        imageBitmap = rotateImage(BitmapFactory.decodeFile(photoUri.path), rotation)
         val dpToPx = context.resources.displayMetrics.density
 
         val resizedImageBitmap = Bitmap.createScaledBitmap(
@@ -92,7 +112,8 @@ class CameraViewModel: ViewModel() {
             ivScaleX,
             ivScaleY,
             startX,
-            startY
+            startY,
+            classes
         )
     }
 
@@ -113,6 +134,7 @@ class CameraViewModel: ViewModel() {
     ) {
         setOutputDirectory(context)
         loadModel(context)
+        classes = loadClasses(context)
     }
 
     fun destroy() {

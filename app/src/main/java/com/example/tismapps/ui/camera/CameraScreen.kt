@@ -3,6 +3,7 @@ package com.example.tismapps.ui.camera
 import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.compose.material.AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 
@@ -10,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun CameraScreen(
     cameraViewModel: CameraViewModel,
-    onCaptureButtonClicked: (Uri) -> Unit
+    onCaptureButtonClicked: (Uri, Int) -> Unit
 
     ) {
     val activity = LocalContext.current as ComponentActivity

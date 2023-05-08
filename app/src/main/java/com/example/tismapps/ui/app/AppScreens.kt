@@ -1,13 +1,9 @@
 package com.example.tismapps.ui.app
 
-import android.Manifest
-import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,6 +13,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -54,7 +51,6 @@ fun MenuScreen(screenName: String) {
 fun ResultScreen(
     cameraViewModel: CameraViewModel
 ) {
-    val cameraUiState by cameraViewModel.cameraUiState.collectAsState()
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,16 +83,16 @@ fun ResultScreen(
                     )
                     drawText(
                         textMeasurer = textMeasurer,
-                        text = "Score: ${(100*bbox.score).roundToInt()}%",
+                        text = "${bbox.className}: ${(100*bbox.score).roundToInt()}%",
                         topLeft = resultOffset,
-                        style = TextStyle(fontSize = 32.sp, color = Color.White)
+                        style = TextStyle(fontSize = 8.sp, color = Color.White)
 
                     )
                 }
 
             })
         }
-        Text(text = cameraUiState.className, modifier = Modifier.padding(top = 16.dp))
+        Text(text = "Predictions", modifier = Modifier.padding(top = 8.dp))
     }
 
 }

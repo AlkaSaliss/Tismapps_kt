@@ -1,5 +1,6 @@
 package com.example.tismapps.ui.camera
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -7,6 +8,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.impl.utils.Exif
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.border
@@ -42,7 +44,7 @@ import kotlin.coroutines.suspendCoroutine
 fun CameraView(
     outputDirectory: File,
     executor: Executor,
-    onImageCaptured: (Uri) -> Unit,
+    onImageCaptured: (Uri, Int) -> Unit,
     onError: (ImageCaptureException) -> Unit
 ){
 
@@ -78,7 +80,6 @@ fun CameraView(
         IconButton(
             modifier = Modifier.padding(bottom = 20.dp),
             onClick = {
-                Log.i("ALKA", "ON CLICK")
                 takePhoto(
                     imageCapture = imageCapture,
                     outputDirectory = outputDirectory,
@@ -104,7 +105,7 @@ private fun takePhoto(
     imageCapture: ImageCapture,
     outputDirectory: File,
     executor: Executor,
-    onImageCaptured: (Uri) -> Unit,
+    onImageCaptured: (Uri, Int) -> Unit,
     onError: (ImageCaptureException) -> Unit
 ) {
     val fileNameFormat = "yyyy-MM-dd HH-mm-ss-SSS"
@@ -118,14 +119,19 @@ private fun takePhoto(
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
     imageCapture.takePicture(outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
+
         override fun onError(exception: ImageCaptureException) {
             Log.e("ALKA", "Take photo error", exception)
             onError(exception)
         }
 
+        @SuppressLint("RestrictedApi")
         override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
             val savedUri = Uri.fromFile(photoFile)
-            onImageCaptured(savedUri)
+            val rotation = Exif.createFromFile(photoFile).rotation
+            onImageCaptured(savedUri, rotation)
+
+            Log.d("YOLOV5", "rotation $rotation")
         }
     })
 }
