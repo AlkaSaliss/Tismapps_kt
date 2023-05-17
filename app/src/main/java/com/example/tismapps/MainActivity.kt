@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowInsets
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,7 +21,6 @@ import com.example.tismapps.ui.theme.TismappsTheme
 class MainActivity : ComponentActivity() {
     private lateinit var cameraViewModel : CameraViewModel
     private var shouldShowCamera = mutableStateOf(false)
-    private var shouldShowResult = mutableStateOf(false)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -29,23 +29,18 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-       // requestCameraPermission()
         super.onCreate(savedInstanceState)
         setContent {
             cameraViewModel = viewModel()
+            cameraViewModel.initializeCameraStuff(this)
             val configuration = LocalConfiguration.current
-            val screenHeight = configuration.screenHeightDp.dp
-            val screenWidth = configuration.screenWidthDp.dp
-            cameraViewModel.imgWidth = screenWidth.times(0.90f)
-            cameraViewModel.imgHeight = screenHeight.times(0.85f)
+            configuration.densityDpi
+            cameraViewModel.screenWidth = configuration.screenWidthDp.dp
+            cameraViewModel.screenHeight = configuration.screenHeightDp.dp
+            //Log.d("DIMS", "${configuration.screenWidthDp.dp.value}, ${configuration.screenHeightDp.dp.value}")
             TismappsTheme {
                 App(
-                    cameraViewModel,
-                    onCaptureButtonClicked = { uri, rotation ->
-                        cameraViewModel.handleImageCapture(uri, rotation, this)
-                        shouldShowCamera.value = false
-                        shouldShowResult.value = true
-                    }
+                    cameraViewModel
                 )
             }
         }

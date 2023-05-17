@@ -1,6 +1,5 @@
 package com.example.tismapps.ui.app
 
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -24,7 +22,7 @@ import com.example.tismapps.R
 import com.example.tismapps.ui.data.MenuItem
 import com.example.tismapps.ui.data.menuItemsList
 import com.example.tismapps.navigateToScreen
-import com.example.tismapps.ui.camera.CameraScreen
+import com.example.tismapps.ui.camera.CameraView
 import com.example.tismapps.ui.camera.CameraViewModel
 import kotlinx.coroutines.launch
 
@@ -96,7 +94,6 @@ fun AppBar(
 @Composable
 fun App(
     cameraViewModel: CameraViewModel,
-    onCaptureButtonClicked: (Uri, Int) -> Unit
 ) {
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState()
@@ -149,19 +146,11 @@ fun App(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppScreensRoutes.Home.name) {
-                CameraScreen(
-                    cameraViewModel,
-                    onCaptureButtonClicked = {uri, rotation ->
-                        onCaptureButtonClicked(uri, rotation)
-                        cameraViewModel.viewModelScope.launch {
-                            navController.navigate(AppScreensRoutes.Result.name)
-                        }
-                    }
-                )
+                CameraView(cameraViewModel)
             }
-            composable(route = AppScreensRoutes.Result.name) {
+            /*composable(route = AppScreensRoutes.Result.name) {
                 ResultScreen(cameraViewModel)
-            }
+            }*/
             composable(route = AppScreensRoutes.Settings.name) {
                 MenuScreen(screenName = AppScreensRoutes.Settings.name)
             }

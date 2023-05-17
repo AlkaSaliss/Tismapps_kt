@@ -46,6 +46,7 @@ fun MenuScreen(screenName: String) {
     }
 }
 
+/*
 @OptIn(ExperimentalTextApi::class)
 @Composable
 fun ResultScreen(
@@ -96,3 +97,4 @@ fun ResultScreen(
     }
 
 }
+*/

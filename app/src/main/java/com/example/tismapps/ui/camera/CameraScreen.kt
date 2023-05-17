@@ -1,6 +1,6 @@
 package com.example.tismapps.ui.camera
 
-import android.net.Uri
+/*import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.material.AlertDialog
@@ -19,13 +19,14 @@ fun CameraScreen(
     cameraViewModel.initializeCameraStuff(activity)
     cameraViewModel.initializeCameraExecutor()
     CameraView(
-        outputDirectory = cameraViewModel.outputDirectory,
         executor = cameraViewModel.cameraExecutor,
-        onImageCaptured = onCaptureButtonClicked
+        cameraViewModel = cameraViewModel
     ) {
         Log.e("TISMAPPS", "View error", it)
     }
 }
+
+ */
 
 
 
