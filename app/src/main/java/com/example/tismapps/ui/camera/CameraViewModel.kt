@@ -40,7 +40,7 @@ class CameraViewModel: ViewModel() {
 
         val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
 
-        val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
+        /*val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
             Bitmap.createScaledBitmap(
                 imageBitmap,
                 PrePostProcessor.mInputWidth,
@@ -70,6 +70,7 @@ class CameraViewModel: ViewModel() {
             startY,
             classes
         )
+         */
 
         imageBitmap.applyCanvas {
             val paintImage = Paint().apply {
@@ -79,7 +80,7 @@ class CameraViewModel: ViewModel() {
                 color = Color(66, 245, 176, 255).toArgb()
                 textSize = 20f
             }
-            rects.forEach {
+            /*rects.forEach {
                 this.drawRect(
                     it.rect.left.toFloat(),
                     it.rect.top.toFloat(),
@@ -94,6 +95,8 @@ class CameraViewModel: ViewModel() {
                     paintText
                 )
             }
+            
+             */
         }
         val dpToPx = globalContext.resources.displayMetrics.density
 
