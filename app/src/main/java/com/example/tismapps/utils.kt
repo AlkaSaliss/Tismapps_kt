@@ -5,7 +5,7 @@ import android.graphics.Rect
 import androidx.compose.material.ScaffoldState
 import androidx.core.app.ComponentActivity
 import androidx.navigation.NavHostController
-import com.example.tismapps.ui.app.AppScreensRoutes
+import com.example.tismapps.ui.data.AppScreensRoutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -16,15 +16,19 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
+data class NavigationStuff(
+    val navController: NavHostController,
+    val scaffoldState: ScaffoldState,
+    val scope: CoroutineScope
+)
+
 fun navigateToScreen(
-    navController: NavHostController,
+    navStuff: NavigationStuff,
     route: AppScreensRoutes,
-    scaffoldState: ScaffoldState,
-    scope: CoroutineScope
 ) {
-    navController.navigate(route.name)
-    scope.launch {
-        scaffoldState.drawerState.close()
+    navStuff.navController.navigate(route.name)
+    navStuff.scope.launch {
+        navStuff.scaffoldState.drawerState.close()
     }
 }
 
@@ -63,11 +67,11 @@ object PrePostProcessor {
     var mInputHeight = 640
 
     // model output is of size 4032*(num_of_class+5)
-    private val mOutputRow =
+    private const val mOutputRow =
         25200 // as decided by the YOLOv5 model for input image of size 640*640
-    private val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
-    private val mThreshold = 0.25f
-    private val mNmsLimit = 15
+    private const val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
+    private const val mThreshold = 0.25f
+    private const val mNmsLimit = 15
     // The two methods nonMaxSuppression and IOU below are ported from https://github.com/hollance/YOLO-CoreML-MPSNNGraph/blob/master/Common/Helpers.swift
     /**
      * Removes bounding boxes that overlap too much with other boxes that have
@@ -79,8 +83,6 @@ object PrePostProcessor {
      */
     private fun nonMaxSuppression(
         boxes: ArrayList<DetectionResult>,
-        limit: Int,
-        threshold: Float
     ): ArrayList<DetectionResult> {
 
         // Do an argsort on the confidence scores, from high to low.
@@ -101,11 +103,11 @@ object PrePostProcessor {
             if (active[i]) {
                 val boxA = boxes[i]
                 selected.add(boxA)
-                if (selected.size >= limit) break
+                if (selected.size >= mNmsLimit) break
                 for (j in i + 1 until boxes.size) {
                     if (active[j]) {
                         val boxB = boxes[j]
-                        if (iOU(boxA.rect, boxB.rect) > threshold) {
+                        if (iOU(boxA.rect, boxB.rect) > mThreshold) {
                             active[j] = false
                             numActive -= 1
                             if (numActive <= 0) {
@@ -180,7 +182,7 @@ object PrePostProcessor {
                 results.add(result)
             }
         }
-        return nonMaxSuppression(results, mNmsLimit, mThreshold)
+        return nonMaxSuppression(results)
     }
 }
 

@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Tismapps</string>
+    <string name="app_title">Smart Agriculture</string>
+    <string name="pastai_usecase_title">🍉PastAI🍉</string>
+    <string name="whichFlower_usecase_title">🌹WhichFlower🌻</string>
+    <string name="pastai_usecase_desc">Watermelon fruits detection &amp; counting</string>
+    <string name="whichflower_usecase_desc">Flower species classification</string>
+    <string name="app_desc">Collections of AI-powered Computer Vision Apps, mainly related to agriculture.\nAll models are embedded so that the App doesn\'t require internet connection.</string>
 </resources>

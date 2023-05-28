@@ -1,10 +1,11 @@
-package com.example.tismapps.ui.camera
+package com.example.tismapps.ui.data
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
 import androidx.camera.core.ImageProxy
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ComponentActivity
@@ -20,7 +21,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-class CameraViewModel: ViewModel() {
+class DetectorViewModel: ViewModel() {
 
     lateinit var cameraExecutor: ExecutorService
         private set
@@ -28,7 +29,7 @@ class CameraViewModel: ViewModel() {
 
     private lateinit var classes: MutableList<String>
 
-    lateinit var globalContext: ComponentActivity
+    private lateinit var globalContext: ComponentActivity
 
     var screenWidth = 1.dp
     var screenHeight = 1.dp
@@ -40,7 +41,7 @@ class CameraViewModel: ViewModel() {
 
         val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
 
-        /*val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
+        val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
             Bitmap.createScaledBitmap(
                 imageBitmap,
                 PrePostProcessor.mInputWidth,
@@ -70,17 +71,18 @@ class CameraViewModel: ViewModel() {
             startY,
             classes
         )
-         */
 
         imageBitmap.applyCanvas {
             val paintImage = Paint().apply {
-                color = Color(255, 77, 255, 100).toArgb()
+                color = Color(0xFF00FF00).toArgb()
+                style = Paint.Style.STROKE
+                strokeWidth = 2F
             }
             val paintText = Paint().apply {
-                color = Color(66, 245, 176, 255).toArgb()
+                color = Color(0, 255, 0, 255).toArgb()
                 textSize = 20f
             }
-            /*rects.forEach {
+            rects.forEach {
                 this.drawRect(
                     it.rect.left.toFloat(),
                     it.rect.top.toFloat(),
@@ -95,8 +97,6 @@ class CameraViewModel: ViewModel() {
                     paintText
                 )
             }
-            
-             */
         }
         val dpToPx = globalContext.resources.displayMetrics.density
 
