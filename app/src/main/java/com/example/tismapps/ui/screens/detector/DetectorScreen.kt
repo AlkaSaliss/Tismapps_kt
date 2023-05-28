@@ -3,6 +3,7 @@ package com.example.tismapps.ui.screens.detector
 import android.content.Context
 import android.widget.ImageView
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -33,6 +34,7 @@ import kotlin.coroutines.suspendCoroutine
 
 
 @Composable
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 fun DetectorScreen (
     detectorViewModel: DetectorViewModel,
     onExitButtonClicked: () -> Unit = { println("Exiting") }
@@ -93,7 +95,7 @@ fun DetectorScreen (
     }
 }
 
-class YoloDetector(private val detectorViewModel: DetectorViewModel, private val imgView: ImageView) : ImageAnalysis.Analyzer {
+@ExperimentalGetImage class YoloDetector(private val detectorViewModel: DetectorViewModel, private val imgView: ImageView) : ImageAnalysis.Analyzer {
 
     override fun analyze(imageProxy: ImageProxy) {
         val imgBitmap = detectorViewModel.detect(imageProxy)

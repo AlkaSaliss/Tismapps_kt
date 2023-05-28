@@ -5,7 +5,6 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import androidx.camera.core.ImageProxy
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ComponentActivity
@@ -26,7 +25,6 @@ class DetectorViewModel: ViewModel() {
     lateinit var cameraExecutor: ExecutorService
         private set
     private lateinit var module: Module
-
     private lateinit var classes: MutableList<String>
 
     private lateinit var globalContext: ComponentActivity
@@ -38,30 +36,28 @@ class DetectorViewModel: ViewModel() {
 
     fun detect(imageProxy: ImageProxy): Bitmap {
         val rotation = imageProxy.imageInfo.rotationDegrees
-
         val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
 
         val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
             Bitmap.createScaledBitmap(
                 imageBitmap,
-                PrePostProcessor.mInputWidth,
-                PrePostProcessor.mInputHeight,
+                YoloV5PrePostProcessor.mInputWidth,
+                YoloV5PrePostProcessor.mInputHeight,
                 false
             ),
-            PrePostProcessor.NO_MEAN_RGB,
-            PrePostProcessor.NO_STD_RGB,
+            YoloV5PrePostProcessor.NO_MEAN_RGB,
+            YoloV5PrePostProcessor.NO_STD_RGB,
             MemoryFormat.CHANNELS_LAST
         )
 
-
         val outputs =
             module.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
-        val imgScaleX = imageBitmap.width.toFloat() / PrePostProcessor.mInputWidth
-        val imgScaleY = imageBitmap.height.toFloat() / PrePostProcessor.mInputHeight
+        val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
+        val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
 
         val startX = 0f
         val startY = 0f
-        val rects = PrePostProcessor.outputsToNMSPredictions(
+        val rects = YoloV5PrePostProcessor.outputsToNMSPredictions(
             outputs,
             imgScaleX,
             imgScaleY,

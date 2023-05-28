@@ -57,7 +57,7 @@ data class DetectionResult(var className: String, var score: Float, var rect: Re
     }
 }
 
-object PrePostProcessor {
+object YoloV5PrePostProcessor {
     // for yolov5 model, no need to apply MEAN and STD
     var NO_MEAN_RGB = floatArrayOf(0.0f, 0.0f, 0.0f)
     var NO_STD_RGB = floatArrayOf(1.0f, 1.0f, 1.0f)
