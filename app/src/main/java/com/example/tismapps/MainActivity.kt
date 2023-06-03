@@ -1,73 +1,81 @@
 package com.example.tismapps
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tismapps.ui.data.DetectorViewModel
-import com.example.tismapps.ui.screens.AppScreen
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import com.example.tismapps.ui.theme.TismappsTheme
 
 class MainActivity : ComponentActivity() {
-    private lateinit var detectorViewModel: DetectorViewModel
-    private var shouldShowCamera = mutableStateOf(false)
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        shouldShowCamera.value = isGranted
-    }
+    private var srcImg: Bitmap? = null
+    private var dstImg: Bitmap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        srcImg = BitmapFactory.decodeFile(assetFilePath(this, "test1.png"))
+        dstImg = srcImg!!.copy(srcImg!!.config, true)
+
         setContent {
-            detectorViewModel = viewModel()
-            detectorViewModel.initializeCameraStuff(this)
-            val configuration = LocalConfiguration.current
-            configuration.densityDpi
-            detectorViewModel.screenWidth = configuration.screenWidthDp.dp
-            detectorViewModel.screenHeight = configuration.screenHeightDp.dp
+
             TismappsTheme {
                 AppScreen(
-                    detectorViewModel
+                    img=dstImg!!,
+                    onClick={flipImg(dstImg!!)}
                 )
             }
         }
-        requestCameraPermission()
     }
 
-    private fun requestCameraPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                Log.i("TISMAPPS", "Camera permission granted")
-                shouldShowCamera.value = true
-            }
-
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                this, Manifest.permission.CAMERA
-            ) -> {
-                Log.i("TISMAPPS", "Showing camera permission dialog")
-                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-
-            }
-
-            else -> requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+    private fun flipImg(img: Bitmap){
+        myFlip(img, img)
+        Log.d("OPENCV", "flipped")
+    }
+    companion object {
+        init {
+            System.loadLibrary("tismapps_cpp")
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        detectorViewModel.destroy()
+    external fun stringFromJNI(): String
+    private external fun myFlip(bitmapIn: Bitmap, bitmapOut: Bitmap)
+}
+
+
+@Composable
+fun AppScreen(
+    img: Bitmap,
+    onClick: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(bitmap = img.asImageBitmap(), contentDescription = "test1;png")
+
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(0.6f)
+        ) {
+            Text(
+                text = "<Flip/>",
+            )
+        }
     }
 }

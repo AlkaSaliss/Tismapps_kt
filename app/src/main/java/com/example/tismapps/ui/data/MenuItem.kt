@@ -5,10 +5,10 @@ import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class AppScreensRoutes{
-    Home,
-    Detector,
-    Classifier
+enum class AppScreensRoutes(val screenName: String){
+    Home(screenName="Smart Agriculture"),
+    Detector(screenName="YoloV5"),
+    Classifier(screenName="Classifier")
 }
 
 data class MenuItem(

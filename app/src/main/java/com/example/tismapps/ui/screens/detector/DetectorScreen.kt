@@ -2,6 +2,7 @@ package com.example.tismapps.ui.screens.detector
 
 import android.content.Context
 import android.widget.ImageView
+import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -28,6 +29,9 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.tismapps.NavigationStuff
+import com.example.tismapps.navigateToScreen
+import com.example.tismapps.ui.data.AppScreensRoutes
 import com.example.tismapps.ui.data.DetectorViewModel
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -37,9 +41,15 @@ import kotlin.coroutines.suspendCoroutine
 @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 fun DetectorScreen (
     detectorViewModel: DetectorViewModel,
-    onExitButtonClicked: () -> Unit = { println("Exiting") }
+    navStuff: NavigationStuff,
+    onExitButtonClicked: () -> Unit = { println("Exiting") },
 ){
-
+    BackHandler {
+        navigateToScreen(
+            navStuff,
+            AppScreensRoutes.Home
+        )
+    }
     val lensFacing = CameraSelector.LENS_FACING_BACK
     val context = LocalContext.current
     val lifeCycleOwner = LocalLifecycleOwner.current

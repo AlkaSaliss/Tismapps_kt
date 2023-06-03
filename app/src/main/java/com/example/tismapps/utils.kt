@@ -26,7 +26,7 @@ fun navigateToScreen(
     navStuff: NavigationStuff,
     route: AppScreensRoutes,
 ) {
-    navStuff.navController.navigate(route.name)
+    navStuff.navController.navigate(route.screenName)
     navStuff.scope.launch {
         navStuff.scaffoldState.drawerState.close()
     }

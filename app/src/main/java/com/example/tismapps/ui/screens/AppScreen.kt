@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.tismapps.NavigationStuff
 import com.example.tismapps.R
@@ -96,12 +98,13 @@ fun DrawerBody(
 
 @Composable
 fun AppBar(
-    onNavigationClicked: () -> Unit
+    onNavigationClicked: () -> Unit,
+    currentScreenName: String
 ) {
     TopAppBar(
         title = {
             Text(
-                text = stringResource(id = R.string.app_title),
+                text = currentScreenName,
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
@@ -129,6 +132,10 @@ fun AppScreen(
     val scope = rememberCoroutineScope()
 
     val navStuff = NavigationStuff(navController, scaffoldState, scope)
+    val backStack by navController.currentBackStackEntryAsState()
+    var currentScreenName = stringResource(id = R.string.app_title)
+    if (backStack?.destination?.route != null)
+        currentScreenName = backStack!!.destination.route.toString()
 
     Scaffold(
         drawerShape = NavShape(0.dp, 0.75f),
@@ -140,7 +147,8 @@ fun AppScreen(
                     scope.launch {
                         scaffoldState.drawerState.open()
                     }
-                }
+                },
+                currentScreenName=currentScreenName
             )
         },
         drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
@@ -169,15 +177,16 @@ fun AppScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppScreensRoutes.Home.name,
+            startDestination = AppScreensRoutes.Home.screenName,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(route = AppScreensRoutes.Home.name) {
+            composable(route = AppScreensRoutes.Home.screenName) {
                 HomeScreen(navStuff)
             }
-            composable(route = AppScreensRoutes.Detector.name) {
+            composable(route = AppScreensRoutes.Detector.screenName) {
                 DetectorScreen(
                     detectorViewModel =  detectorViewModel,
+                    navStuff = navStuff,
                     onExitButtonClicked = {
                         navigateToScreen(
                             navStuff,
@@ -186,8 +195,10 @@ fun AppScreen(
                     }
                 )
             }
-            composable(route = AppScreensRoutes.Classifier.name) {
-                ClassifierScreen()
+            composable(route = AppScreensRoutes.Classifier.screenName) {
+                ClassifierScreen(
+                    navStuff = navStuff,
+                )
             }
         }
     }
