@@ -39,7 +39,7 @@ class MainActivity: ComponentActivity() {
             TismappsTheme {
                 AppScreen(
                     detectorViewModel
-                )
+
             }
         }
         requestCameraPermission()
