@@ -1,142 +1,90 @@
-#include <jni.h>
-#include <string>
+#include <android/log.h>
+#include <fstream>
+#include <iostream>
 #include "cvutils.h"
-#include "android/bitmap.h"
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
 
 using namespace std;
 using namespace cv;
 
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_tismapps_MainActivity_stringFromJNI(
+// CONSTANTS
+torch::jit::Module MODULE;
+float CONFIDENCE_THRESHOLD, IOU_THRESHOLD;
+vector<string> CLASS_NAMES;
+
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_tismapps_ui_data_DetectorViewModel_loadModuleNative(
         JNIEnv* env,
-        jobject ){
-
-    string hello = "Hello from c++ with opencv";
-
-    return env->NewStringUTF(hello.c_str());
-}
-
-void bitmapToMat
-        (JNIEnv * env, jobject bitmap, Mat& dst, jboolean needUnPremultiplyAlpha)
-{
-    AndroidBitmapInfo  info;
-    void*              pixels = 0;
-
-    try {
-        CV_Assert( AndroidBitmap_getInfo(env, bitmap, &info) >= 0 );
-        CV_Assert( info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
-                   info.format == ANDROID_BITMAP_FORMAT_RGB_565 );
-        CV_Assert( AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 );
-        CV_Assert( pixels );
-        dst.create(info.height, info.width, CV_8UC4);
-        if( info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 )
-        {
-            Mat tmp(info.height, info.width, CV_8UC4, pixels);
-            if(needUnPremultiplyAlpha) cvtColor(tmp, dst, COLOR_mRGBA2RGBA);
-            else tmp.copyTo(dst);
-        } else {
-            // info.format == ANDROID_BITMAP_FORMAT_RGB_565
-            Mat tmp(info.height, info.width, CV_8UC2, pixels);
-            cvtColor(tmp, dst, COLOR_BGR5652RGBA);
-        }
-        AndroidBitmap_unlockPixels(env, bitmap);
-        return;
-    } catch(const cv::Exception& e) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-        jclass je = env->FindClass("java/lang/Exception");
-        env->ThrowNew(je, e.what());
-        return;
-    } catch (...) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-        jclass je = env->FindClass("java/lang/Exception");
-        env->ThrowNew(je, "Unknown exception in JNI code {nBitmapToMat}");
-        return;
-    }
-}
-
-
-void matToBitmap
-        (JNIEnv * env, Mat src, jobject bitmap, jboolean needPremultiplyAlpha)
-{
-    AndroidBitmapInfo  info;
-    void*              pixels = 0;
-
-    try {
-        CV_Assert( AndroidBitmap_getInfo(env, bitmap, &info) >= 0 );
-        CV_Assert( info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
-                   info.format == ANDROID_BITMAP_FORMAT_RGB_565 );
-        CV_Assert( src.dims == 2 && info.height == (uint32_t)src.rows && info.width == (uint32_t)src.cols );
-        CV_Assert( src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4 );
-        CV_Assert( AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 );
-        CV_Assert( pixels );
-        if( info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 )
-        {
-            Mat tmp(info.height, info.width, CV_8UC4, pixels);
-            if(src.type() == CV_8UC1)
-            {
-                cvtColor(src, tmp, COLOR_GRAY2RGBA);
-            } else if(src.type() == CV_8UC3){
-                cvtColor(src, tmp, COLOR_RGB2RGBA);
-            } else if(src.type() == CV_8UC4){
-                if(needPremultiplyAlpha) cvtColor(src, tmp, COLOR_RGBA2mRGBA);
-                else src.copyTo(tmp);
-            }
-        } else {
-            // info.format == ANDROID_BITMAP_FORMAT_RGB_565
-            Mat tmp(info.height, info.width, CV_8UC2, pixels);
-            if(src.type() == CV_8UC1)
-            {
-                cvtColor(src, tmp, COLOR_GRAY2BGR565);
-            } else if(src.type() == CV_8UC3){
-                cvtColor(src, tmp, COLOR_RGB2BGR565);
-            } else if(src.type() == CV_8UC4){
-                cvtColor(src, tmp, COLOR_RGBA2BGR565);
-            }
-        }
-        AndroidBitmap_unlockPixels(env, bitmap);
-        return;
-    } catch(const cv::Exception& e) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-        jclass je = env->FindClass("java/lang/Exception");
-        env->ThrowNew(je, e.what());
-        return;
-    } catch (...) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-        jclass je = env->FindClass("java/lang/Exception");
-        env->ThrowNew(je, "Unknown exception in JNI code {nMatToBitmap}");
-        return;
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_tismapps_MainActivity_myFlip(
-        JNIEnv *env,
         jobject,
-        jobject bitmapIn,
-        jobject bitmapOut
-) {
+        jstring jmodulePath,
+        jstring jclassNamesPath,
+        jfloat confidenceThreshold,
+        jfloat iouThreshold
+){
+    c10::InferenceMode guard; // disable gradients ops tracking
 
-    Mat src;
-    bitmapToMat(env, bitmapIn, src, false);
-    myFlip(src);
-    matToBitmap(env, src, bitmapOut, false);
+    const char* modelPath = env->GetStringUTFChars(jmodulePath, nullptr);
+    const char* classNamesPath = env->GetStringUTFChars(jclassNamesPath, nullptr);
+
+    // Model loading
+    MODULE = torch::jit::load(modelPath);
+    MODULE.eval();
+
+    // Class names loading
+    fstream classNameFile(classNamesPath);
+    string cls;
+    while(getline(classNameFile, cls)){
+        CLASS_NAMES.push_back(cls);
+    }
+    classNameFile.close();
+
+    // Thresholds loading
+    CONFIDENCE_THRESHOLD = confidenceThreshold;
+    IOU_THRESHOLD = iouThreshold;
+
+    // Free some unused memory
+    env->ReleaseStringUTFChars(jmodulePath, modelPath);
+    env->ReleaseStringUTFChars(jclassNamesPath, classNamesPath);
 }
 
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_tismapps_MainActivity_myBlur(
-        JNIEnv *env,
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
+        JNIEnv* env,
         jobject,
-        jobject bitmapIn,
-        jobject bitmapOut,
-        jfloat sigma
-) {
+        jobject imgBitmap
+){
 
-    Mat src;
-    bitmapToMat(env, bitmapIn, src, false);
-    myBlur(src, sigma);
-    matToBitmap(env, src, bitmapOut, false);
+    c10::InferenceMode guard; // disable gradients ops tracking
+
+    // Initialize different containers
+    Mat img;
+    vector<Bbox> boxes;
+    // Prepare input
+    bitmapToMat(env, imgBitmap, img, false);
+    std::vector<torch::jit::IValue> inputs;
+    torch::Tensor imgTensor =
+        torch::from_blob(img.data, {img.rows, img.cols, img.channels()}, torch::kByte)
+        .index({
+            torch::indexing::Slice(), // take all rows
+            torch::indexing::Slice(), // take all cols
+            torch::indexing::Slice(torch::indexing::None, 3) // take only 3 RGB channels in case there's an extra alpha channel
+        })
+        .permute({2, 0, 1}) // HWC -> CHW
+        .toType(torch::kFloat)
+        .div(255)
+        .unsqueeze(0);
+    inputs.emplace_back(imgTensor);
+
+    // make predictions
+    torch::Tensor output = MODULE.forward(inputs).toTuple()->elements()[0].toTensor()[0];
+    filterLowScoresAndSort(output, CONFIDENCE_THRESHOLD);
+    predToBbox(boxes, output, CLASS_NAMES);
+    boxes = nomMaxSuppression(boxes, IOU_THRESHOLD);
+
+    // Draw bboxes on image
+    drawPredictions(img, boxes);
+    matToBitmap(env, img, imgBitmap, false);
+
+    return imgBitmap;
 }
-
