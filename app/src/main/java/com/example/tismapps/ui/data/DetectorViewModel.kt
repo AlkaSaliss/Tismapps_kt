@@ -3,6 +3,7 @@ package com.example.tismapps.ui.data
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.util.Log
 import androidx.camera.core.ImageProxy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -50,8 +51,10 @@ class DetectorViewModel: ViewModel() {
             MemoryFormat.CHANNELS_LAST
         )
 
+        val startTime = System.currentTimeMillis()
         val outputs =
             module.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
+
         val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
         val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
 
@@ -95,7 +98,8 @@ class DetectorViewModel: ViewModel() {
             }
         }
         val dpToPx = globalContext.resources.displayMetrics.density
-
+        val endTime = System.currentTimeMillis()
+        Log.d("FPS", "Start: $startTime  -- End:  $endTime  -- Diff: ${endTime-startTime}")
         return Bitmap.createScaledBitmap(
             imageBitmap,
             (screenWidth.value * dpToPx).toInt(),
