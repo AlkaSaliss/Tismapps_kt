@@ -31,7 +31,7 @@ class DetectorViewModel: ViewModel() {
             imageBitmap,
             YoloV5PrePostProcessor.mInputWidth,
             YoloV5PrePostProcessor.mInputHeight,
-            false
+            true
         )
 
         imageBitmap = predictNative(imageBitmap)
@@ -41,7 +41,7 @@ class DetectorViewModel: ViewModel() {
             imageBitmap,
             (screenWidth.value * dpToPx).toInt(),
             (screenHeight.value * dpToPx).toInt(),
-            false
+            true
         )
     }
 
