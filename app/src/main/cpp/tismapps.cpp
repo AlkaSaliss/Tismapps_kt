@@ -3,7 +3,6 @@
 #include <iostream>
 #include "cvutils.h"
 #include <ctime>
-#include <stdio.h>
 
 using namespace std;
 using namespace cv;
