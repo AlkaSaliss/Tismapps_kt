@@ -3,6 +3,7 @@
 #include <iostream>
 #include "cvutils.h"
 #include <ctime>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
@@ -14,6 +15,12 @@ float CONFIDENCE_THRESHOLD, IOU_THRESHOLD;
 vector<string> CLASS_NAMES;
 
 #define GET_VARIABLE_NAME(Variable) (#Variable)
+
+
+uint64_t timeSinceEpochMillisec() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_tismapps_ui_data_DetectorViewModel_loadModuleNative(
@@ -57,7 +64,7 @@ Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
         jobject imgBitmap
 ){
 
-    clock_t start_time = clock();
+    auto start_time = timeSinceEpochMillisec();
 
     c10::InferenceMode guard; // disable gradients ops tracking
 
@@ -67,7 +74,7 @@ Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
     // Prepare input
     bitmapToMat(env, imgBitmap, img, false);
 
-    clock_t time_bitmapToMat = clock();
+    auto time_bitmapToMat = timeSinceEpochMillisec();
     std::vector<torch::jit::IValue> inputs;
     torch::Tensor imgTensor =
         torch::from_blob(img.data, {img.rows, img.cols, img.channels()}, torch::kByte)
@@ -81,28 +88,28 @@ Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
         .div(255)
         .unsqueeze(0);
     inputs.emplace_back(imgTensor);
-    clock_t time_inputCreation = clock();
+    auto time_inputCreation = timeSinceEpochMillisec();
 
     // make predictions
     torch::Tensor output = MODULE.forward(inputs).toTuple()->elements()[0].toTensor()[0];
-    clock_t time_forward = clock();
+    auto time_forward = timeSinceEpochMillisec();
     //torch::Tensor output = torch::randn({25000, 85});
     filterLowScoresAndSort(output, CONFIDENCE_THRESHOLD);
 
-    clock_t time_filterLowScoresAndSort = clock();
+    auto time_filterLowScoresAndSort = timeSinceEpochMillisec();
     predToBbox(boxes, output, CLASS_NAMES);
-    clock_t time_predToBbox = clock();
+    auto time_predToBbox = timeSinceEpochMillisec();
     boxes = nomMaxSuppression(boxes, IOU_THRESHOLD);
-    clock_t time_nomMaxSuppression = clock();
+    auto time_nomMaxSuppression = timeSinceEpochMillisec();
 
     // Draw bboxes on image
     drawPredictions(img, boxes);
-    clock_t time_drawPredictions = clock();
+    auto time_drawPredictions = timeSinceEpochMillisec();
     matToBitmap(env, img, imgBitmap, false);
-    clock_t time_matToBitmap = clock();
+    auto time_matToBitmap = timeSinceEpochMillisec();
 
-    auto compute_duration = [](clock_t& start, clock_t& end) {
-        return ((float)(end - start)) / CLOCKS_PER_SEC;
+    auto compute_duration = [](auto& start, auto& end) {
+        return (end - start);
     };
     auto duration_bitmapToMat = compute_duration(start_time, time_bitmapToMat);
     auto duration_inputCreation = compute_duration(time_bitmapToMat, time_inputCreation);
@@ -115,7 +122,7 @@ Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
 
     auto duration_bitmapToMatVal = (string)GET_VARIABLE_NAME(duration_matToBitmap);
 
-    auto format_duration = [](float& var){
+    auto format_duration = [](uint64_t& var){
         return (string)GET_VARIABLE_NAME(var) + "="+to_string(var);
     };
 
@@ -134,7 +141,7 @@ Java_com_example_tismapps_ui_data_DetectorViewModel_predictNative(
     float duration = ((float)(clock() - start_time)) / CLOCKS_PER_SEC;
     float fps = 1 / duration;
 
-    __android_log_print(ANDROID_LOG_VERBOSE, "YOLO_FPS", "DURATION: %s", durations_formatted.c_str());
+    __android_log_print(ANDROID_LOG_VERBOSE, "FPS", "DURATION: %s", durations_formatted.c_str());
 
     return imgBitmap;
 }
