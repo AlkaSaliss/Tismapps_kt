@@ -57,21 +57,17 @@ class DetectorViewModelTensorflow: ViewModel() {
         yoloInput = imgProcessor.process(yoloInput)
 
         val outputShape = arrayOf(1, YoloV5PrePostProcessor.mOutputRow, YoloV5PrePostProcessor.mOutputColumn).toIntArray()
-        var yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
+        val yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
 
-        //Log.d("YOLO",
-        //"$rotation ---- ${yoloInput.tensorBuffer.floatArray.min()}---${yoloInput.tensorBuffer.floatArray.max()}")
 
         tflite.run(yoloInput.buffer, yoloOutput.buffer)
         val outputs = yoloOutput.floatArray
-        //Log.d("YOLO_TENSORFLOW", outputs.toList().toString())
 
         val startTime = System.currentTimeMillis()
 
         val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
         val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
         imageProxy.width
-        //Log.d("YOLO1", "imageBitmap.width.toFloat():${imageProxy.width}, imageBitmap.height.toFloat():${imageProxy.height}")
 
         val startX = 0f
         val startY = 0f

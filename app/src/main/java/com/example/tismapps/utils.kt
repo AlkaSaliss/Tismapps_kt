@@ -2,7 +2,6 @@ package com.example.tismapps
 
 import android.content.Context
 import android.graphics.Rect
-import android.util.Log
 import androidx.compose.material.ScaffoldState
 import androidx.core.app.ComponentActivity
 import androidx.navigation.NavHostController
@@ -154,11 +153,10 @@ object YoloV5PrePostProcessor {
         val results = ArrayList<DetectionResult>()
         for (i in 0 until mOutputRow) {
             if (outputs[i * mOutputColumn + 4] > mThreshold) {
-                val x = outputs[i * mOutputColumn]
-                val y = outputs[i * mOutputColumn + 1]
-                val w = outputs[i * mOutputColumn + 2]
-                val h = outputs[i * mOutputColumn + 3]
-                Log.d("YOLO", "x: $x, y: $y, w: $w, h: $h, imgScaleX: $imgScaleX, imgScaleY: $imgScaleY")
+                val x = outputs[i * mOutputColumn] * mInputWidth
+                val y = outputs[i * mOutputColumn + 1] * mInputHeight
+                val w = outputs[i * mOutputColumn + 2] * mInputWidth
+                val h = outputs[i * mOutputColumn + 3] * mInputHeight
                 val left = imgScaleX * (x - w / 2)
                 val top = imgScaleY * (y - h / 2)
                 val right = imgScaleX * (x + w / 2)
@@ -171,7 +169,6 @@ object YoloV5PrePostProcessor {
                         classIdx = j
                     }
                 }
-                //Log.d("YOLO", "left: $left, top: $top, right: $right, bottom: $bottom,")
                 val rect = Rect(
                     (startX + ivScaleX * left).toInt(),
                     (startY + top * ivScaleY).toInt(),
