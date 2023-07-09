@@ -2,6 +2,7 @@ package com.example.tismapps
 
 import android.content.Context
 import android.graphics.Rect
+import android.util.Log
 import androidx.compose.material.ScaffoldState
 import androidx.core.app.ComponentActivity
 import androidx.navigation.NavHostController
@@ -53,7 +54,7 @@ fun assetFilePath(context: Context, assetName: String): String {
 
 data class DetectionResult(var className: String, var score: Float, var rect: Rect) {
     override fun toString(): String {
-        return "Prediction(Class index: $className, Confidence score: $score, Coords: $rect)\nWidth:${rect.width()}, Height:${rect.height()}"
+        return "Prediction(Class: $className, Confidence: $score, Coords: $rect)Width:${rect.width()}, Height:${rect.height()}"
     }
 }
 
@@ -157,6 +158,7 @@ object YoloV5PrePostProcessor {
                 val y = outputs[i * mOutputColumn + 1]
                 val w = outputs[i * mOutputColumn + 2]
                 val h = outputs[i * mOutputColumn + 3]
+                Log.d("YOLO", "x: $x, y: $y, w: $w, h: $h, imgScaleX: $imgScaleX, imgScaleY: $imgScaleY")
                 val left = imgScaleX * (x - w / 2)
                 val top = imgScaleY * (y - h / 2)
                 val right = imgScaleX * (x + w / 2)
