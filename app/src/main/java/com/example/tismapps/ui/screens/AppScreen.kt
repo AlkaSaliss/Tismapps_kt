@@ -33,7 +33,8 @@ import com.example.tismapps.ui.data.MenuItem
 import com.example.tismapps.ui.data.menuItemsList
 import com.example.tismapps.navigateToScreen
 import com.example.tismapps.ui.data.AppScreensRoutes
-import com.example.tismapps.ui.data.DetectorViewModel
+import com.example.tismapps.ui.data.DetectorViewModelPytorch
+import com.example.tismapps.ui.data.DetectorViewModelTensorflow
 import com.example.tismapps.ui.screens.classifier.ClassifierScreen
 import com.example.tismapps.ui.screens.detector.DetectorScreen
 import kotlinx.coroutines.launch
@@ -122,7 +123,7 @@ fun AppBar(
 
 @Composable
 fun AppScreen(
-    detectorViewModel: DetectorViewModel,
+    detectorViewModel: DetectorViewModelTensorflow,
 ) {
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState()

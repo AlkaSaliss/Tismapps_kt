@@ -28,7 +28,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.example.tismapps.ui.data.DetectorViewModel
+import com.example.tismapps.ui.data.DetectorViewModelPytorch
+import com.example.tismapps.ui.data.DetectorViewModelTensorflow
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -36,7 +37,7 @@ import kotlin.coroutines.suspendCoroutine
 @Composable
 @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 fun DetectorScreen (
-    detectorViewModel: DetectorViewModel,
+    detectorViewModel: DetectorViewModelTensorflow,
     onExitButtonClicked: () -> Unit = { println("Exiting") }
 ){
 
@@ -95,7 +96,7 @@ fun DetectorScreen (
     }
 }
 
-@ExperimentalGetImage class YoloDetector(private val detectorViewModel: DetectorViewModel, private val imgView: ImageView) : ImageAnalysis.Analyzer {
+@ExperimentalGetImage class YoloDetector(private val detectorViewModel: DetectorViewModelTensorflow, private val imgView: ImageView) : ImageAnalysis.Analyzer {
 
     override fun analyze(imageProxy: ImageProxy) {
         val imgBitmap = detectorViewModel.detect(imageProxy)

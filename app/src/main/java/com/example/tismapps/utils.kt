@@ -67,9 +67,9 @@ object YoloV5PrePostProcessor {
     var mInputHeight = 640
 
     // model output is of size 4032*(num_of_class+5)
-    private const val mOutputRow =
+    const val mOutputRow =
         25200 // as decided by the YOLOv5 model for input image of size 640*640
-    private const val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
+    const val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
     private const val mThreshold = 0.25f
     private const val mNmsLimit = 15
     // The two methods nonMaxSuppression and IOU below are ported from https://github.com/hollance/YOLO-CoreML-MPSNNGraph/blob/master/Common/Helpers.swift
