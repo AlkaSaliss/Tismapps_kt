@@ -71,7 +71,7 @@ class DetectorViewModelTensorflow: ViewModel() {
         val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
         val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
         imageProxy.width
-        Log.d("YOLO1", "imageBitmap.width.toFloat():${imageProxy.width}, imageBitmap.height.toFloat():${imageProxy.height}")
+        //Log.d("YOLO1", "imageBitmap.width.toFloat():${imageProxy.width}, imageBitmap.height.toFloat():${imageProxy.height}")
 
         val startX = 0f
         val startY = 0f

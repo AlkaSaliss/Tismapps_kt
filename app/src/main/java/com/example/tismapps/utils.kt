@@ -171,6 +171,7 @@ object YoloV5PrePostProcessor {
                         classIdx = j
                     }
                 }
+                //Log.d("YOLO", "left: $left, top: $top, right: $right, bottom: $bottom,")
                 val rect = Rect(
                     (startX + ivScaleX * left).toInt(),
                     (startY + top * ivScaleY).toInt(),
