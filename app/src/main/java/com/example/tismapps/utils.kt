@@ -22,6 +22,11 @@ data class NavigationStuff(
     val scope: CoroutineScope
 )
 
+enum class DLFrameworks(val framework: String) {
+    PYTORCH("gray"),
+    TENSORFLOW("yellow")
+}
+
 fun navigateToScreen(
     navStuff: NavigationStuff,
     route: AppScreensRoutes,

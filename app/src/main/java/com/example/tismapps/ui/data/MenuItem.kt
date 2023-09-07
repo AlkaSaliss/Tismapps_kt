@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class AppScreensRoutes{
     Home,
-    Detector,
-    Classifier
+    DetectorPytorch,
+    DetectorTensorflow
 }
 
 data class MenuItem(
@@ -26,15 +26,15 @@ val menuItemsList = listOf(
         icon = Icons.Outlined.Home
     ),
     MenuItem(
-        id = "pastai",
-        title = "PastAI",
-        contentDescription = "Go to Pastai Screen",
+        id = "pytorch",
+        title = "Pytorch",
+        contentDescription = "Go to Pytorch YoloV5",
         icon = Icons.Outlined.ArrowCircleRight
     ),
     MenuItem(
-        id = "whichflower",
-        title = "WhichFlower",
-        contentDescription = "Go to Whichflower Scree,",
+        id = "tensorflow",
+        title = "Tensorflow",
+        contentDescription = "Go to Tensorflow YoloV5",
         icon = Icons.Outlined.ArrowCircleRight
     )
 )

@@ -27,15 +27,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.tismapps.DLFrameworks
 import com.example.tismapps.NavigationStuff
 import com.example.tismapps.R
 import com.example.tismapps.ui.data.MenuItem
 import com.example.tismapps.ui.data.menuItemsList
 import com.example.tismapps.navigateToScreen
 import com.example.tismapps.ui.data.AppScreensRoutes
-import com.example.tismapps.ui.data.DetectorViewModelPytorch
-import com.example.tismapps.ui.data.DetectorViewModelTensorflow
-import com.example.tismapps.ui.screens.classifier.ClassifierScreen
+import com.example.tismapps.ui.data.DetectorViewModel
 import com.example.tismapps.ui.screens.detector.DetectorScreen
 import kotlinx.coroutines.launch
 
@@ -123,7 +122,7 @@ fun AppBar(
 
 @Composable
 fun AppScreen(
-    detectorViewModel: DetectorViewModelTensorflow,
+    detectorViewModel: DetectorViewModel,
 ) {
     val navController = rememberNavController()
     val scaffoldState = rememberScaffoldState()
@@ -151,17 +150,17 @@ fun AppScreen(
                 items = menuItemsList,
                 onItemClick = {
                     when (it.id) {
-                        "home" -> navigateToScreen(
+                        "pytorch" -> navigateToScreen(
                             navStuff,
-                            AppScreensRoutes.Home
+                            AppScreensRoutes.DetectorPytorch
                         )
-                        "pastai" -> navigateToScreen(
+                        "tensorflow" -> navigateToScreen(
                             navStuff,
-                            AppScreensRoutes.Detector
+                            AppScreensRoutes.DetectorTensorflow
                         )
                         else -> navigateToScreen(
                             navStuff,
-                            AppScreensRoutes.Classifier
+                            AppScreensRoutes.Home
                         )
                     }
                 }
@@ -176,9 +175,10 @@ fun AppScreen(
             composable(route = AppScreensRoutes.Home.name) {
                 HomeScreen(navStuff)
             }
-            composable(route = AppScreensRoutes.Detector.name) {
+            composable(route = AppScreensRoutes.DetectorPytorch.name) {
                 DetectorScreen(
                     detectorViewModel =  detectorViewModel,
+                    framework = DLFrameworks.PYTORCH,
                     onExitButtonClicked = {
                         navigateToScreen(
                             navStuff,
@@ -187,8 +187,17 @@ fun AppScreen(
                     }
                 )
             }
-            composable(route = AppScreensRoutes.Classifier.name) {
-                ClassifierScreen()
+            composable(route = AppScreensRoutes.DetectorTensorflow.name) {
+                DetectorScreen(
+                    detectorViewModel =  detectorViewModel,
+                    framework = DLFrameworks.TENSORFLOW,
+                    onExitButtonClicked = {
+                        navigateToScreen(
+                            navStuff,
+                            AppScreensRoutes.Home
+                        )
+                    }
+                )
             }
         }
     }

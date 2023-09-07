@@ -13,12 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tismapps.ui.data.DetectorViewModelTensorflow
+import com.example.tismapps.ui.data.DetectorViewModel
 import com.example.tismapps.ui.screens.AppScreen
 import com.example.tismapps.ui.theme.TismappsTheme
 
 class MainActivity : ComponentActivity() {
-    private lateinit var detectorViewModel: DetectorViewModelTensorflow
+    private lateinit var detectorViewModel: DetectorViewModel
     private var shouldShowCamera = mutableStateOf(false)
 
     private val requestPermissionLauncher = registerForActivityResult(

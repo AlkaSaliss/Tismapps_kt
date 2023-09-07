@@ -79,7 +79,7 @@ fun HomeScreen(
                 imageId = R.drawable.watermelon,
                 useCaseTitle = stringResource(R.string.pastai_usecase_title),
                 useCaseDescription = stringResource(R.string.pastai_usecase_desc),
-                onUseCaseButtonClicked = { navigateToScreen(navStuff, AppScreensRoutes.Detector) }
+                onUseCaseButtonClicked = { navigateToScreen(navStuff, AppScreensRoutes.DetectorPytorch) }
             )
         }
         item {
@@ -93,7 +93,7 @@ fun HomeScreen(
                 imageId = R.drawable.whichflower,
                 useCaseTitle = stringResource(R.string.whichFlower_usecase_title),
                 useCaseDescription = stringResource(R.string.whichflower_usecase_desc),
-                onUseCaseButtonClicked = { navigateToScreen(navStuff, AppScreensRoutes.Classifier) }
+                onUseCaseButtonClicked = { navigateToScreen(navStuff, AppScreensRoutes.DetectorTensorflow) }
             )
         }
 

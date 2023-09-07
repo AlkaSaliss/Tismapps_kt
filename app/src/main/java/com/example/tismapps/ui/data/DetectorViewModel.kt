@@ -12,6 +12,11 @@ import androidx.core.app.ComponentActivity
 import androidx.core.graphics.applyCanvas
 import androidx.lifecycle.ViewModel
 import com.example.tismapps.*
+import org.pytorch.IValue
+import org.pytorch.LiteModuleLoader
+import org.pytorch.MemoryFormat
+import org.pytorch.Module
+import org.pytorch.torchvision.TensorImageUtils
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.InterpreterApi
 import org.tensorflow.lite.support.common.FileUtil
@@ -24,24 +29,49 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
-class DetectorViewModelTensorflow: ViewModel() {
+class DetectorViewModel: ViewModel() {
 
     lateinit var cameraExecutor: ExecutorService
         private set
+    private lateinit var modulePt: Module
+    private lateinit var moduleTf: InterpreterApi
     private lateinit var classes: MutableList<String>
 
     private lateinit var globalContext: ComponentActivity
-    private lateinit var tflite: InterpreterApi
 
     var screenWidth = 1.dp
     var screenHeight = 1.dp
 
-    private val modelName = "yolov5s-fp16.tflite"
+    private val modelNamePt = "yolov5s.torchscript.ptl"
+    private val modelNameTf = "yolov5s-fp16.tflite"
 
-    fun detect(imageProxy: ImageProxy): Bitmap {
+    private var activeFramework = DLFrameworks.PYTORCH
 
-        val rotation = imageProxy.imageInfo.rotationDegrees
-        val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
+    fun switchFramework(framework: DLFrameworks){
+        activeFramework = framework
+    }
+
+    private fun predictPt(imageBitmap: Bitmap): FloatArray {
+        val imgTensor = TensorImageUtils.bitmapToFloat32Tensor(
+            Bitmap.createScaledBitmap(
+                imageBitmap,
+                YoloV5PrePostProcessor.mInputWidth,
+                YoloV5PrePostProcessor.mInputHeight,
+                false
+            ),
+            YoloV5PrePostProcessor.NO_MEAN_RGB,
+            YoloV5PrePostProcessor.NO_STD_RGB,
+            MemoryFormat.CHANNELS_LAST
+        )
+        val output = modulePt.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
+        val minScore = output.min()
+        val maxScore = output.max()
+        val meanScore = output.average()
+        Log.d("YOLO_PYTORCH", "preidcting pytorch $minScore -- $maxScore -- $meanScore")
+        return output
+    }
+
+    private fun predictTf(imageBitmap: Bitmap): FloatArray {
         val imgProcessor = ImageProcessor.Builder()
             .add(NormalizeOp(0f, 255f))
             .build()
@@ -55,19 +85,25 @@ class DetectorViewModelTensorflow: ViewModel() {
             )
         )
         yoloInput = imgProcessor.process(yoloInput)
-
-        val outputShape = arrayOf(1, YoloV5PrePostProcessor.mOutputRow, YoloV5PrePostProcessor.mOutputColumn).toIntArray()
+        val outputShape = arrayOf(
+            1,
+            YoloV5PrePostProcessor.mOutputRow,
+            YoloV5PrePostProcessor.mOutputColumn
+        ).toIntArray()
         val yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
+        moduleTf.run(yoloInput.buffer, yoloOutput.buffer)
+        return yoloOutput.floatArray
+    }
 
 
-        tflite.run(yoloInput.buffer, yoloOutput.buffer)
-        val outputs = yoloOutput.floatArray
-
+    fun detect(imageProxy: ImageProxy): Bitmap {
         val startTime = System.currentTimeMillis()
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
+        val outputs = if (activeFramework == DLFrameworks.PYTORCH) predictPt(imageBitmap) else predictTf(imageBitmap)
 
         val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
         val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
-        imageProxy.width
 
         val startX = 0f
         val startY = 0f
@@ -93,7 +129,6 @@ class DetectorViewModelTensorflow: ViewModel() {
                 textSize = 20f
             }
             rects.forEach {
-                //Log.d("YOLO_TENSORFLOW", it.toString())
                 this.drawRect(
                     it.rect.left.toFloat(),
                     it.rect.top.toFloat(),
@@ -122,12 +157,13 @@ class DetectorViewModelTensorflow: ViewModel() {
 
 
     private fun loadModel() {
+        modulePt = LiteModuleLoader.load(assetFilePath(globalContext, modelNamePt))
         try {
             val tfliteModel = FileUtil.loadMappedFile(
                 globalContext,
-                modelName
+                modelNameTf
             )
-            tflite = InterpreterApi.create(
+            moduleTf = InterpreterApi.create(
                 tfliteModel, InterpreterApi.Options()
             )
         } catch (e: IOException) {
