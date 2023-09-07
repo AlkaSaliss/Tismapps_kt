@@ -153,15 +153,18 @@ object YoloV5PrePostProcessor {
         ivScaleY: Float,
         startX: Float,
         startY: Float,
-        classes: MutableList<String>
+        classes: MutableList<String>,
+        scaleCoordinate: Boolean
     ): ArrayList<DetectionResult> {
+        val xScale = if (scaleCoordinate) mInputWidth else 1
+        val yScale = if (scaleCoordinate) mInputHeight else 1
         val results = ArrayList<DetectionResult>()
         for (i in 0 until mOutputRow) {
             if (outputs[i * mOutputColumn + 4] > mThreshold) {
-                val x = outputs[i * mOutputColumn] * mInputWidth
-                val y = outputs[i * mOutputColumn + 1] * mInputHeight
-                val w = outputs[i * mOutputColumn + 2] * mInputWidth
-                val h = outputs[i * mOutputColumn + 3] * mInputHeight
+                val x = outputs[i * mOutputColumn] * xScale
+                val y = outputs[i * mOutputColumn + 1] * yScale
+                val w = outputs[i * mOutputColumn + 2] * xScale
+                val h = outputs[i * mOutputColumn + 3] * yScale
                 val left = imgScaleX * (x - w / 2)
                 val top = imgScaleY * (y - h / 2)
                 val right = imgScaleX * (x + w / 2)

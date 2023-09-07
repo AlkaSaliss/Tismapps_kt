@@ -63,12 +63,7 @@ class DetectorViewModel: ViewModel() {
             YoloV5PrePostProcessor.NO_STD_RGB,
             MemoryFormat.CHANNELS_LAST
         )
-        val output = modulePt.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
-        val minScore = output.min()
-        val maxScore = output.max()
-        val meanScore = output.average()
-        Log.d("YOLO_PT", "predicting pytorch $minScore -- $maxScore -- $meanScore")
-        return output
+        return modulePt.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
     }
 
     private fun predictTf(imageBitmap: Bitmap): FloatArray {
@@ -92,12 +87,7 @@ class DetectorViewModel: ViewModel() {
         ).toIntArray()
         val yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
         moduleTf.run(yoloInput.buffer, yoloOutput.buffer)
-        val output = yoloOutput.floatArray
-        val minScore = output.min()
-        val maxScore = output.max()
-        val meanScore = output.average()
-        Log.d("YOLO_TF", "predicting TF $minScore -- $maxScore -- $meanScore")
-        return output
+        return yoloOutput.floatArray
     }
 
 
@@ -120,14 +110,14 @@ class DetectorViewModel: ViewModel() {
             1f,
             startX,
             startY,
-            classes
+            classes,
+            activeFramework == DLFrameworks.TENSORFLOW
         )
 
         if (rects.size > 0) {
 
             val classNames = rects.map { it.className }
             rects[0].rect.left
-            Log.d("YOLO_PYTORCH", "predicting pytorch ${rects[0].rect.left} -- ${rects[0].rect.top} -- ${rects[0].rect.width()} -- ${rects[0].rect.height()} -- ${classNames.joinToString("•")}")
         }
 
         imageBitmap.applyCanvas {
@@ -158,7 +148,7 @@ class DetectorViewModel: ViewModel() {
         }
         val dpToPx = globalContext.resources.displayMetrics.density
         val endTime = System.currentTimeMillis()
-        Log.d("FPS", "Start: $startTime  -- End:  $endTime  -- Diff: ${endTime-startTime}")
+        Log.d("YOLO_FPS", "Start: $startTime  -- End:  $endTime  -- Diff: ${endTime-startTime}")
         return Bitmap.createScaledBitmap(
             imageBitmap,
             (screenWidth.value * dpToPx).toInt(),
