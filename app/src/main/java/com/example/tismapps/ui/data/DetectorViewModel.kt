@@ -67,7 +67,7 @@ class DetectorViewModel: ViewModel() {
         val minScore = output.min()
         val maxScore = output.max()
         val meanScore = output.average()
-        Log.d("YOLO_PYTORCH", "preidcting pytorch $minScore -- $maxScore -- $meanScore")
+        Log.d("YOLO_PT", "predicting pytorch $minScore -- $maxScore -- $meanScore")
         return output
     }
 
@@ -92,7 +92,12 @@ class DetectorViewModel: ViewModel() {
         ).toIntArray()
         val yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
         moduleTf.run(yoloInput.buffer, yoloOutput.buffer)
-        return yoloOutput.floatArray
+        val output = yoloOutput.floatArray
+        val minScore = output.min()
+        val maxScore = output.max()
+        val meanScore = output.average()
+        Log.d("YOLO_TF", "predicting TF $minScore -- $maxScore -- $meanScore")
+        return output
     }
 
 
@@ -117,6 +122,13 @@ class DetectorViewModel: ViewModel() {
             startY,
             classes
         )
+
+        if (rects.size > 0) {
+
+            val classNames = rects.map { it.className }
+            rects[0].rect.left
+            Log.d("YOLO_PYTORCH", "predicting pytorch ${rects[0].rect.left} -- ${rects[0].rect.top} -- ${rects[0].rect.width()} -- ${rects[0].rect.height()} -- ${classNames.joinToString("•")}")
+        }
 
         imageBitmap.applyCanvas {
             val paintImage = Paint().apply {
