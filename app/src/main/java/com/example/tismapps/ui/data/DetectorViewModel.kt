@@ -55,6 +55,11 @@ class DetectorViewModel: ViewModel() {
         val outputs =
             module.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
 
+        val minScore = outputs.min()
+        val maxScore = outputs.max()
+        val meanScore = outputs.average()
+        Log.d("YOLO_PT", "$minScore -- $maxScore -- $meanScore")
+
         val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
         val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
 
