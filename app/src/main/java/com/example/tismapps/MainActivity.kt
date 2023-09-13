@@ -61,7 +61,6 @@ class MainActivity : ComponentActivity() {
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
 
             }
-
             else -> requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
@@ -69,5 +68,11 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         detectorViewModel.destroy()
+    }
+
+    companion object {
+        init {
+            System.loadLibrary("tismapps")
+        }
     }
 }

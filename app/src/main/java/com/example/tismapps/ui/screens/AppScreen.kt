@@ -158,6 +158,14 @@ fun AppScreen(
                             navStuff,
                             AppScreensRoutes.DetectorTensorflow
                         )
+                        "tensorflow_gpu" -> navigateToScreen(
+                            navStuff,
+                            AppScreensRoutes.DetectorTensorflowGpu
+                        )
+                        "onnx" -> navigateToScreen(
+                            navStuff,
+                            AppScreensRoutes.DetectorOnnx
+                        )
                         else -> navigateToScreen(
                             navStuff,
                             AppScreensRoutes.Home
@@ -191,6 +199,30 @@ fun AppScreen(
                 DetectorScreen(
                     detectorViewModel =  detectorViewModel,
                     framework = DLFrameworks.TENSORFLOW,
+                    onExitButtonClicked = {
+                        navigateToScreen(
+                            navStuff,
+                            AppScreensRoutes.Home
+                        )
+                    }
+                )
+            }
+            composable(route = AppScreensRoutes.DetectorTensorflowGpu.name) {
+                DetectorScreen(
+                    detectorViewModel =  detectorViewModel,
+                    framework = DLFrameworks.TENSORFLOW_GPU,
+                    onExitButtonClicked = {
+                        navigateToScreen(
+                            navStuff,
+                            AppScreensRoutes.Home
+                        )
+                    }
+                )
+            }
+            composable(route = AppScreensRoutes.DetectorOnnx.name) {
+                DetectorScreen(
+                    detectorViewModel =  detectorViewModel,
+                    framework = DLFrameworks.ONNX,
                     onExitButtonClicked = {
                         navigateToScreen(
                             navStuff,

@@ -19,12 +19,17 @@ import org.pytorch.Module
 import org.pytorch.torchvision.TensorImageUtils
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.InterpreterApi
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.CompatibilityList
+import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.io.File
 import java.io.IOException
+import java.util.ArrayList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -35,6 +40,7 @@ class DetectorViewModel: ViewModel() {
         private set
     private lateinit var modulePt: Module
     private lateinit var moduleTf: InterpreterApi
+    private lateinit var moduleTfGpu: Interpreter
     private lateinit var classes: MutableList<String>
 
     private lateinit var globalContext: ComponentActivity
@@ -44,6 +50,7 @@ class DetectorViewModel: ViewModel() {
 
     private val modelNamePt = "yolov5s.torchscript.ptl"
     private val modelNameTf = "yolov5s-fp16.tflite"
+    private val modelNameOnnx = "yolov5s.onnx"
 
     private var activeFramework = DLFrameworks.PYTORCH
 
@@ -66,7 +73,7 @@ class DetectorViewModel: ViewModel() {
         return modulePt.forward(IValue.from(imgTensor)).toTuple()[0].toTensor().dataAsFloatArray
     }
 
-    private fun predictTf(imageBitmap: Bitmap): FloatArray {
+    private fun predictTf(imageBitmap: Bitmap, useGpu: Boolean): FloatArray {
         val imgProcessor = ImageProcessor.Builder()
             .add(NormalizeOp(0f, 255f))
             .build()
@@ -86,7 +93,11 @@ class DetectorViewModel: ViewModel() {
             YoloV5PrePostProcessor.mOutputColumn
         ).toIntArray()
         val yoloOutput = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
-        moduleTf.run(yoloInput.buffer, yoloOutput.buffer)
+        if (useGpu)
+            moduleTfGpu.run(yoloInput.buffer, yoloOutput.buffer)
+        else
+            moduleTf.run(yoloInput.buffer, yoloOutput.buffer)
+
         return yoloOutput.floatArray
     }
 
@@ -94,32 +105,69 @@ class DetectorViewModel: ViewModel() {
     fun detect(imageProxy: ImageProxy): Bitmap {
         val startTime = System.currentTimeMillis()
         val rotation = imageProxy.imageInfo.rotationDegrees
-        val imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
-        val outputs = if (activeFramework == DLFrameworks.PYTORCH) predictPt(imageBitmap) else predictTf(imageBitmap)
+        var imageBitmap = rotateImage(imageProxy.toBitmap(), rotation)
+            val outputs = when(activeFramework){
+                DLFrameworks.TENSORFLOW_GPU -> predictTf(imageBitmap, true)
+                DLFrameworks.TENSORFLOW -> predictTf(imageBitmap, false)
+                DLFrameworks.ONNX -> FloatArray(85 * 25200){0f}
+                else -> predictPt(imageBitmap)
+            }
 
-        val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
-        val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
+        if (activeFramework == DLFrameworks.ONNX) {
+            val scaledBitmap = Bitmap.createScaledBitmap(
+                imageBitmap,
+                YoloV5PrePostProcessor.mInputWidth,
+                YoloV5PrePostProcessor.mInputHeight,
+                false
+            )
+            Log.d("ONNXCPP", "GPU OK ✅ ✅${scaledBitmap.width} ${scaledBitmap.height}")
+            //imageBitmap = predictNativeOnnx(scaledBitmap)
+            imageBitmap = predictNativeOnnx(scaledBitmap)
+        }
+        else {
+            val imgScaleX = imageBitmap.width.toFloat() / YoloV5PrePostProcessor.mInputWidth
+            val imgScaleY = imageBitmap.height.toFloat() / YoloV5PrePostProcessor.mInputHeight
 
-        val startX = 0f
-        val startY = 0f
-        val rects = YoloV5PrePostProcessor.outputsToNMSPredictions(
-            outputs,
-            imgScaleX,
-            imgScaleY,
-            1f,
-            1f,
-            startX,
-            startY,
-            classes,
-            activeFramework == DLFrameworks.TENSORFLOW
-        )
+            val startX = 0f
+            val startY = 0f
+            val rects = YoloV5PrePostProcessor.outputsToNMSPredictions(
+                outputs,
+                imgScaleX,
+                imgScaleY,
+                1f,
+                1f,
+                startX,
+                startY,
+                classes,
+                activeFramework != DLFrameworks.PYTORCH
+            )
 
-        if (rects.size > 0) {
+            if (rects.size > 0) {
 
-            val classNames = rects.map { it.className }
-            rects[0].rect.left
+                val classNames = rects.map { it.className }
+                rects[0].rect.left
+            }
+
+            drawPredictionsOnBitmap(imageBitmap, rects)
         }
 
+
+
+        val dpToPx = globalContext.resources.displayMetrics.density
+        val endTime = System.currentTimeMillis()
+        Log.d("YOLO_FPS", "Start: $startTime  -- End:  $endTime  -- Diff: ${endTime-startTime}")
+        return Bitmap.createScaledBitmap(
+            imageBitmap,
+            (screenWidth.value * dpToPx).toInt(),
+            (screenHeight.value * dpToPx).toInt(),
+            false
+        )
+    }
+
+    private fun drawPredictionsOnBitmap(
+        imageBitmap: Bitmap,
+        rects: ArrayList<DetectionResult>
+    ) {
         imageBitmap.applyCanvas {
             val paintImage = Paint().apply {
                 color = Color(0xFF00FF00).toArgb()
@@ -146,20 +194,14 @@ class DetectorViewModel: ViewModel() {
                 )
             }
         }
-        val dpToPx = globalContext.resources.displayMetrics.density
-        val endTime = System.currentTimeMillis()
-        Log.d("YOLO_FPS", "Start: $startTime  -- End:  $endTime  -- Diff: ${endTime-startTime}")
-        return Bitmap.createScaledBitmap(
-            imageBitmap,
-            (screenWidth.value * dpToPx).toInt(),
-            (screenHeight.value * dpToPx).toInt(),
-            false
-        )
     }
 
 
     private fun loadModel() {
+        // Pytorch model loading
         modulePt = LiteModuleLoader.load(assetFilePath(globalContext, modelNamePt))
+
+        // TF cpu model loading
         try {
             val tfliteModel = FileUtil.loadMappedFile(
                 globalContext,
@@ -171,6 +213,31 @@ class DetectorViewModel: ViewModel() {
         } catch (e: IOException) {
             Log.e("YOLO_TENSORFLOW", "Error reading model", e)
         }
+
+        // TF gpu model loading
+        val compatList = CompatibilityList()
+
+        val options = Interpreter.Options().apply{
+            if(compatList.isDelegateSupportedOnThisDevice){
+                // if the device has a supported GPU, add the GPU delegate
+                val delegateOptions = compatList.bestOptionsForThisDevice
+                this.addDelegate(GpuDelegate(delegateOptions))
+                Log.d("YOLOGPU", "GPU OK ✅ ✅")
+            } else {
+                // if the GPU is not supported, run on 4 threads
+                Log.d("YOLOGPU", "GPU NOT OK")
+                this.numThreads = 4
+            }
+        }
+
+        moduleTfGpu = Interpreter(File(assetFilePath(globalContext, modelNameTf)), options)
+
+        loadOnnxModuleNative(
+            assetFilePath(globalContext, modelNameOnnx),
+            assetFilePath(globalContext, "classes.txt"),
+            YoloV5PrePostProcessor.confidenceThreshold,
+            YoloV5PrePostProcessor.iouThreshold
+        )
     }
 
     private fun rotateImage(srcImg: Bitmap, rotation: Int): Bitmap {
@@ -191,5 +258,14 @@ class DetectorViewModel: ViewModel() {
     fun destroy() {
         cameraExecutor.shutdown()
     }
+
+    private external fun loadOnnxModuleNative(
+        modulePath: String,
+        classNamesPath: String,
+        confidenceThreshold: Float,
+        iouThreshold: Float
+    )
+
+    private external fun predictNativeOnnx(imgBitmap: Bitmap): Bitmap
 
 }

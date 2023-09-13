@@ -22,9 +22,11 @@ data class NavigationStuff(
     val scope: CoroutineScope
 )
 
-enum class DLFrameworks(val framework: String) {
-    PYTORCH("gray"),
-    TENSORFLOW("yellow")
+enum class DLFrameworks {
+    PYTORCH,
+    TENSORFLOW,
+    TENSORFLOW_GPU,
+    ONNX
 }
 
 fun navigateToScreen(
@@ -75,8 +77,9 @@ object YoloV5PrePostProcessor {
     const val mOutputRow =
         25200 // as decided by the YOLOv5 model for input image of size 640*640
     const val mOutputColumn = 85 // left, top, right, bottom, score and 80 class probabilities
-    private const val mThreshold = 0.25f
-    private const val mNmsLimit = 15
+    //private const val mNmsLimit = 15
+    const val iouThreshold = 0.45f
+    const val confidenceThreshold = 0.25f
     // The two methods nonMaxSuppression and IOU below are ported from https://github.com/hollance/YOLO-CoreML-MPSNNGraph/blob/master/Common/Helpers.swift
     /**
      * Removes bounding boxes that overlap too much with other boxes that have
@@ -108,11 +111,11 @@ object YoloV5PrePostProcessor {
             if (active[i]) {
                 val boxA = boxes[i]
                 selected.add(boxA)
-                if (selected.size >= mNmsLimit) break
+                //if (selected.size >= mNmsLimit) break
                 for (j in i + 1 until boxes.size) {
                     if (active[j]) {
                         val boxB = boxes[j]
-                        if (iOU(boxA.rect, boxB.rect) > mThreshold) {
+                        if (iOU(boxA.rect, boxB.rect) > iouThreshold) {
                             active[j] = false
                             numActive -= 1
                             if (numActive <= 0) {
@@ -160,7 +163,7 @@ object YoloV5PrePostProcessor {
         val yScale = if (scaleCoordinate) mInputHeight else 1
         val results = ArrayList<DetectionResult>()
         for (i in 0 until mOutputRow) {
-            if (outputs[i * mOutputColumn + 4] > mThreshold) {
+            if (outputs[i * mOutputColumn + 4] > confidenceThreshold) {
                 val x = outputs[i * mOutputColumn] * xScale
                 val y = outputs[i * mOutputColumn + 1] * yScale
                 val w = outputs[i * mOutputColumn + 2] * xScale
